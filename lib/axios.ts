@@ -23,7 +23,7 @@ export class ApiError extends Error {
 // Use this from Client Components. The browser sends the login cookie automatically
 // because the API is on the same origin, so no token handling is needed here.
 export const api = axios.create({
-  baseURL: 'http://localhost:3000/api/v1',
+  baseURL: NEXT_PUBLIC_API_BASE_URL ?? '/api/v1',
   timeout: 10_000,
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
 })
