@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
-import { BookOpen, LogOut, Menu, UserRound } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { BookOpen, LogOut, Maximize2, Menu, Minimize2, UserRound } from 'lucide-react'
 import { signOut } from '@/app/actions/auth'
 import SignInDialog from '@/components/auth/sign-in-dialog'
 
@@ -14,6 +14,25 @@ type Props = {
 
 export default function TopBar({ user, subtitle = 'Explore', showSignIn = true }: Props) {
   const [profileOpen, setProfileOpen] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  useEffect(() => {
+    function updateFullscreenState() {
+      setIsFullscreen(Boolean(document.fullscreenElement))
+    }
+
+    document.addEventListener('fullscreenchange', updateFullscreenState)
+    return () => document.removeEventListener('fullscreenchange', updateFullscreenState)
+  }, [])
+
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen()
+      else await document.documentElement.requestFullscreen()
+    } catch {
+      // Fullscreen can be denied by browser permissions or device settings.
+    }
+  }
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/95 backdrop-blur">
@@ -45,6 +64,14 @@ export default function TopBar({ user, subtitle = 'Explore', showSignIn = true }
               <Link href="/queries" className="block rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
                 Campus asks
               </Link>
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                {isFullscreen ? <Minimize2 className="h-4 w-4" aria-hidden /> : <Maximize2 className="h-4 w-4" aria-hidden />}
+                {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              </button>
             </div>
           )}
 
@@ -72,6 +99,14 @@ export default function TopBar({ user, subtitle = 'Explore', showSignIn = true }
 
               {profileOpen && (
                 <div className="absolute right-0 top-12 z-40 min-w-36 rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg">
+                  <button
+                    type="button"
+                    onClick={toggleFullscreen}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {isFullscreen ? <Minimize2 className="h-4 w-4" aria-hidden /> : <Maximize2 className="h-4 w-4" aria-hidden />}
+                    {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                  </button>
                   <form action={signOut}>
                     <button
                       type="submit"

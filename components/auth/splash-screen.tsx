@@ -13,8 +13,13 @@ export default function SplashScreen({ children }: { children: ReactNode }) {
     setHasEntered(window.localStorage.getItem(GUEST_ENTRY_KEY) === 'true')
   }, [])
 
-  function continueAsGuest() {
+  async function continueAsGuest() {
     window.localStorage.setItem(GUEST_ENTRY_KEY, 'true')
+    try {
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen()
+    } catch {
+      // Fullscreen can be denied by browser permissions or device settings.
+    }
     setHasEntered(true)
   }
 
