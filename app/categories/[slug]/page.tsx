@@ -12,17 +12,30 @@ import {api} from "@/lib/axios"
 
 type Props = { params: Promise<{ slug: string }> }
 
+function slugify(value: string) {
+  return value
+    .normalize('NFKD')                 // split accents: é -> e + ́
+    .replace(/[\u0300-\u036f]/g, '')   // drop the accent marks
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')       // anything non-alphanumeric -> hyphen
+    .replace(/^-+|-+$/g, '')           // trim leading/trailing hyphens
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const category = mockCategories.find((c) => c.slug === slug)
+  const safeSlug = slugify(decodeURIComponent(slug))
+  const category = mockCategories.find((c) => c.slug === safeSlug)
   return { title: category ? `${category.name} | EzyFind` : 'Category | EzyFind' }
 }
 
 export default async function CategoryPage({ params }: Props) {
   const { slug } = await params
+  const safeSlug = slugify(decodeURIComponent(slug))
 
  const [response, user] = await Promise.all([
-  api.get('/resources', { params: { section: slug } }),
+  api.get('/resources', { params: { section: safeSlug } }),
   getTopBarUser(),
  ])
 const category = response.data.data

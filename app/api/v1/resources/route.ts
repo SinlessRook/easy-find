@@ -13,19 +13,32 @@ function badRequest(field: string, message: string) {
   )
 }
 
-// GET /api/v1/resources?section=backend&top=true&page=1&limit=20
-// Public read: no login needed, so there is no getUser() check here.
+// Turns "AI Tools", "ai tools", " Documentation " into "ai-tools", "ai-tools", "documentation".
+// Used by BOTH GET (filter) and POST (storage) so reads and writes always agree.
+// Note: not exported on purpose. Next.js route files may only export HTTP methods and config.
+const slugify = (value: string) => value.trim().toLowerCase().replace(/\s+/g, '-')
+
+const SECTION_SLUG_RE = /^[a-z0-9-]{1,40}$/
+
+/* ------------------------------------------------------------------ */
+/* GET /api/v1/resources?section=documentation&top=true&page=1&limit=20 */
+/* Public read: no login needed, so there is no getUser() check here.  */
+/* ------------------------------------------------------------------ */
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
 
-  // Optional single section. Empty or missing means "all resources".
-  const section = searchParams.get('section') || null
-  if (section && !/^[a-z0-9-]{1,40}$/.test(section)) {
-    return badRequest('section', 'Section may only contain lowercase letters, numbers and dashes.')
+  // Optional single section. Case-insensitive and space-tolerant
+  // (?section=AI%20Tools and ?section=ai-tools both become "ai-tools").
+  // Empty or missing means "all resources".
+  const rawSection = searchParams.get('section')
+  const section = rawSection && rawSection.trim() ? slugify(rawSection) : null
+  if (section && !SECTION_SLUG_RE.test(section)) {
+    return badRequest('section', 'Section may only contain letters, numbers, spaces and dashes.')
   }
 
-  // Optional: top=true sorts by score (upvotes minus downvotes), highest first.
-  const topParam = searchParams.get('top')
+  // Optional: top=true sorts by score. Case-insensitive ("True", "TRUE" all work).
+  const topParam = searchParams.get('top')?.trim().toLowerCase() ?? null
   if (topParam !== null && topParam !== 'true' && topParam !== 'false') {
     return badRequest('top', 'top must be true or false.')
   }
@@ -38,7 +51,7 @@ export async function GET(request: Request) {
   const supabase = await createClient()
 
   let query = supabase.from('resources_with_score').select(COLUMNS, { count: 'exact' })
-  if (section) query = query.contains('sections', [section]) // "sections includes this value"
+  if (section) query = query.contains('sections', [section])
 
   // top=true: highest score first (newest wins ties). Otherwise: newest first.
   const ordered = top
@@ -56,21 +69,26 @@ export async function GET(request: Request) {
   }
 
   const items = data.map((r) => {
-    const votes = r.upvotes + r.downvotes
+    // When filtering, report the section that was asked for so the response
+    // matches the request even if it is not the first element of the array.
+    const primary = section ?? r.sections?.[0] ?? ''
     return {
       id: r.id,
-      section: r.sections[0] ?? '',
+      section: primary,
       kind: r.resource_type,
       title: r.title,
       description: r.description ?? '',
       url: r.link,
-      tag: r.sections[0] ?? '',
+      tag: primary,
       tagTone: 'indigo' as const, // TODO: derive from the section name
       userVote: 0, // TODO: get the signed-in user's vote from the votes table
       createdAt: r.created_at,
       upvotes: r.upvotes,
       downvotes: r.downvotes,
-      author: { username: 'ken_architect' },
+      // COLUMNS deliberately excludes created_by, so it is not available here (and a raw
+      // uuid should not be shown as a username anyway). TODO: expose a public username
+      // from a profiles table via the view, then read it here.
+      author: { username: 'Unknown' },
     }
   })
 
@@ -84,15 +102,15 @@ export async function GET(request: Request) {
 
 const RESOURCE_TYPES = ['link', 'tool', 'article', 'video', 'course', 'other'] as const
 
+// Each section is slugified BEFORE validation, so "AI Tools" is stored as "ai-tools".
+const sectionSlug = z
+  .string()
+  .transform(slugify)
+  .pipe(z.string().regex(SECTION_SLUG_RE, 'Use letters, numbers, spaces and dashes only (max 40 characters)'))
+
 const createSchema = z.object({
   sections: z
-    .array(
-      z
-        .string()
-        .trim()
-        .toLowerCase()
-        .regex(/^[a-z0-9-]{1,40}$/, 'Use lowercase letters, numbers and dashes only')
-    )
+    .array(sectionSlug)
     .min(1, 'Pick at least one section')
     .max(5, 'At most 5 sections')
     .transform((list) => [...new Set(list)]), // drop duplicates
@@ -139,7 +157,12 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     const fields: Record<string, string> = {}
     for (const issue of parsed.error.issues) {
-      const key = issue.path.length ? issue.path.join('.') : 'body'
+      // sections.0, sections.1 ... are reported under a single "sections" key.
+      const key = issue.path.length
+        ? issue.path[0] === 'sections'
+          ? 'sections'
+          : issue.path.join('.')
+        : 'body'
       if (!fields[key]) fields[key] = issue.message
     }
     return NextResponse.json(
@@ -148,7 +171,8 @@ export async function POST(request: Request) {
     )
   }
 
-  // 3) Insert. created_by is NOT sent: the column default (auth.uid()) fills it in
+  // 3) Insert. `sections` is already slugified and de-duplicated by the schema.
+  //    created_by is NOT sent: the column default (auth.uid()) fills it in
   //    from the verified login, and row-level security double-checks it.
   const { title, url, sections, resourcetype, description } = parsed.data
   const { data, error } = await supabase

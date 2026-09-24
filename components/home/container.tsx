@@ -231,7 +231,6 @@ function ResourceCard({ resource: r }: { resource: Resource }) {
   const [userVote, setUserVote] = useState<-1 | 0 | 1>(0)
   const [score, setScore] = useState(r.score)
   const [votePending, setVotePending] = useState(false)
-
   useEffect(() => {
     let active = true
 
