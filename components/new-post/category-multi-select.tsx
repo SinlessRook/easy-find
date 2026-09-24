@@ -11,24 +11,31 @@ type Props = {
   defaultSection: string
   error?: string
   onChange?: (section: string) => void
+  limit?: number
 }
 
-export default function CategoryMultiSelect({ categories, defaultSection, error, onChange }: Props) {
+export default function CategoryMultiSelect({ categories, defaultSection, error, onChange, limit=3 }: Props) {
   const initial = categories.some((category) => category.slug === defaultSection) ? [defaultSection] : []
   const [selected, setSelected] = useState(initial)
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
-  const matches = useMemo(() => {
-    const term = query.trim().toLowerCase()
-    return categories.filter(
-      (category) =>
-        !selected.includes(category.slug) &&
-        (!term ||
-          category.name.toLowerCase().includes(term) ||
-          category.slug.toLowerCase().includes(term))
-    )
-  }, [categories, query, selected])
+const matches = useMemo(() => {
+  const term = query.trim().toLowerCase()
+  if (!term) return []
+
+  const found = categories.filter(
+    (category) =>
+      !selected.includes(category.slug) &&
+      (category.name.toLowerCase().includes(term) ||
+        category.slug.toLowerCase().includes(term))
+  )
+
+  const rank = (name: string) => (name.toLowerCase().startsWith(term) ? 0 : 1)
+  found.sort((a, b) => rank(a.name) - rank(b.name))
+
+  return found.slice(0, limit)
+}, [categories, query, selected, limit])
   const newCategoryName = query.trim()
   const newCategorySlug = newCategoryName
     .toLowerCase()
