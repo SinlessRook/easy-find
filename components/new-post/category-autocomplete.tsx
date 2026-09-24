@@ -11,13 +11,14 @@ type Props = {
   value: string
   onChange: (value: string) => void
   error?: string
+  limit?: number
 }
 
 function slugify(value: string) {
   return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
-export default function CategoryAutocomplete({ categories, value, onChange, error }: Props) {
+export default function CategoryAutocomplete({ categories, value, onChange, error,limit=3}: Props) {
   const [query, setQuery] = useState(() => categories.find((category) => category.slug === value)?.name ?? value)
   const [open, setOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -35,10 +36,14 @@ export default function CategoryAutocomplete({ categories, value, onChange, erro
     return () => document.removeEventListener('mousedown', close)
   }, [])
 
-  const matches = useMemo(() => {
-    const term = query.trim().toLowerCase()
-    return categories.filter((category) => !term || category.name.toLowerCase().includes(term))
-  }, [categories, query])
+const matches = useMemo(() => {
+  const term = query.trim().toLowerCase()
+  if(!term) return []
+  const found = categories.filter((category) => !term || category.name.toLowerCase().includes(term))
+  const rank = (name: string) => (name.toLowerCase().startsWith(term) ? 0 : 1)
+  found.sort((a, b) => rank(a.name) - rank(b.name))
+  return found.slice(0, limit)
+}, [categories, query, limit])
 
   const existing = categories.some(
     (category) => category.name.toLowerCase() === query.trim().toLowerCase()

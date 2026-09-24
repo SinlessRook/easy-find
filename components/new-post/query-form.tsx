@@ -117,7 +117,7 @@ export default function QueryForm({ categories, defaultSection, author }: Props)
           {errors.expiry_date && <p role="alert" className="mt-1.5 text-sm text-red-600">{errors.expiry_date}</p>}
         </div>
         <div>
-          <label htmlFor="contactNum" className="mb-2 block text-[17px] font-semibold text-slate-900">Contact number <span className="text-sm font-normal text-slate-500">(optional)</span></label>
+          <label htmlFor="contactNum" className="mb-2 block text-[17px] font-semibold text-slate-900">Contact number</label>
           <input
             id="contactNum"
             type="tel"
@@ -140,6 +140,7 @@ export default function QueryForm({ categories, defaultSection, author }: Props)
           value={section}
           onChange={setSection}
           error={errors.section}
+          limit={3}
         />
       </div>
 
