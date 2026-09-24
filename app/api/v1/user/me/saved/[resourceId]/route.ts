@@ -6,7 +6,6 @@ import { createClient } from '@/lib/supabase/server'
 //   DELETE /api/v1/user/me/saved/{resourceId}   unsave it
 // Both require a logged-in user and are idempotent (safe to repeat).
 
-.
 type Context = { params: Promise<{ resourceId: string }> }
 
 const idSchema = z.string().uuid('resourceId must be a valid id')
