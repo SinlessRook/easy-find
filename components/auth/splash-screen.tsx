@@ -112,7 +112,7 @@ export default function SplashScreen({ children }: { children: ReactNode }) {
           type="button"
           size="lg"
           onClick={continueAsGuest}
-          className="w-full rounded-full bg-base py-6 text-black font-semibold text-slate-950 hover:bg-slate-800"
+          className="w-full rounded-full bg-base py-6 text-black font-semibold text-slate-950 hover:bg-slate-950 hover:text-white"
         >
           Continue as a guest
         </Button>
