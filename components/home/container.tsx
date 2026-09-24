@@ -152,7 +152,7 @@ function FeaturedTools({ resources }: { resources: Resource[] }) {
     'bg-[#f7dfc1]',
     'bg-[#f3d6df]',
     'bg-[#dce7d0]',
-  ]
+  ] 
 
   const variants = {
     enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%' }),
