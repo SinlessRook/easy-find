@@ -37,11 +37,18 @@ function readDraft() {
   }
 }
 
+function normalizeUrl(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed || /\s/.test(trimmed)) return trimmed
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+}
+
 function checkUrl(value: string): 'empty' | 'valid' | 'invalid' {
-  if (!value.trim()) return 'empty'
+  const normalized = normalizeUrl(value)
+  if (!normalized) return 'empty'
 
   try {
-    const u = new URL(value.trim())
+    const u = new URL(normalized)
     return /^https?:$/.test(u.protocol) && u.hostname.includes('.')
       ? 'valid'
       : 'invalid'
@@ -52,7 +59,7 @@ function checkUrl(value: string): 'empty' | 'valid' | 'invalid' {
 
 function previewImageFor(value: string) {
   try {
-    const hostname = new URL(value.trim()).hostname.replace(/^www\./, '')
+    const hostname = new URL(normalizeUrl(value)).hostname.replace(/^www\./, '')
     return hostname
       ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=128`
       : null
@@ -76,9 +83,12 @@ export default function ResourceForm({
 
   const [url, setUrl] = useState('')
   const [title, setTitle] = useState('')
+  const [titleEdited, setTitleEdited] = useState(false)
   const [section, setSection] = useState(defaultSection)
   const [why, setWhy] = useState('')
+  const [whyEdited, setWhyEdited] = useState(false)
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null)
+  const [metadataLoading, setMetadataLoading] = useState(false)
   const [draftNote, setDraftNote] = useState('')
   const [draftHandled, setDraftHandled] = useState(false)
 
@@ -102,6 +112,36 @@ export default function ResourceForm({
     return () => window.clearTimeout(timer)
   }, [url])
 
+  useEffect(() => {
+    const normalizedUrl = normalizeUrl(url)
+    if (checkUrl(normalizedUrl) !== 'valid') return
+
+    let active = true
+    setMetadataLoading(true)
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await api.get<{ data: { title: string; description: string } }>(
+          '/resources/metadata',
+          { params: { url: normalizedUrl }, timeout: 7000 }
+        )
+        if (!active) return
+        const metadata = response.data.data
+        if (!titleEdited && metadata.title) setTitle(metadata.title)
+        if (!whyEdited && metadata.description) setWhy(metadata.description)
+      } catch {
+        // Metadata is an enhancement; the user can still complete the form manually.
+      } finally {
+        if (active) setMetadataLoading(false)
+      }
+    }, 450)
+
+    return () => {
+      active = false
+      window.clearTimeout(timer)
+      setMetadataLoading(false)
+    }
+  }, [url, titleEdited, whyEdited])
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
 
@@ -109,11 +149,11 @@ export default function ResourceForm({
     setErrors({})
 
     const nextErrors: Record<string, string> = {}
-    const trimmedUrl = url.trim()
+    const trimmedUrl = normalizeUrl(url)
     const trimmedTitle = title.trim()
     const trimmedWhy = why.trim()
 
-    if (checkUrl(trimmedUrl) !== 'valid') nextErrors.url = 'Enter a valid http:// or https:// link.'
+    if (checkUrl(trimmedUrl) !== 'valid') nextErrors.url = 'Enter a valid website or link.'
     if (trimmedTitle.length < 3) nextErrors.title = 'The title needs at least 3 characters.'
     else if (trimmedTitle.length > 150) nextErrors.title = 'The title can be at most 150 characters.'
     if (!section) nextErrors.section = 'Pick at least one category.'
@@ -191,11 +231,15 @@ export default function ResourceForm({
     try {
       const d = JSON.parse(draftRaw ?? '{}')
 
+      const restoredTitle = typeof d.title === 'string' ? d.title : ''
+      const restoredWhy = typeof d.why === 'string' ? d.why.slice(0, WHY_MAX) : ''
       setUrl(typeof d.url === 'string' ? d.url : '')
-      setTitle(typeof d.title === 'string' ? d.title : '')
+      setTitle(restoredTitle)
+      setTitleEdited(Boolean(restoredTitle))
       setWhy(
-        typeof d.why === 'string' ? d.why.slice(0, WHY_MAX) : ''
+        restoredWhy
       )
+      setWhyEdited(Boolean(restoredWhy))
 
       // A ?section= in the URL wins over the saved category
       if (
@@ -296,9 +340,17 @@ export default function ResourceForm({
             required
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://www.notion.so/templates/category/student"
+            placeholder="notion.so or https://notion.so/templates"
+            list="resource-url-suggestions"
+            onBlur={() => setUrl(normalizeUrl(url))}
             className="min-w-0 flex-1 bg-transparent py-2 text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
           />
+          <datalist id="resource-url-suggestions">
+            <option value="notion.so" />
+            <option value="canva.com" />
+            <option value="drive.google.com" />
+            <option value="github.com" />
+          </datalist>
         </div>
 
         {errors.url && (
@@ -309,6 +361,9 @@ export default function ResourceForm({
             {errors.url}
           </p>
         )}
+        <p className="mt-1.5 text-xs text-slate-500" aria-live="polite">
+          {metadataLoading ? 'Getting the site name and description...' : 'Paste a link and we will suggest the title and description.'}
+        </p>
       </div>
 
       {/* Title */}
@@ -332,7 +387,10 @@ export default function ResourceForm({
           required
           maxLength={150}
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => {
+            setTitleEdited(true)
+            setTitle(e.target.value)
+          }}
           placeholder="Free exam planner for first-year students"
           className={field}
         />
@@ -388,7 +446,10 @@ export default function ResourceForm({
           rows={4}
           maxLength={WHY_MAX}
           value={why}
-          onChange={(e) => setWhy(e.target.value)}
+          onChange={(e) => {
+            setWhyEdited(true)
+            setWhy(e.target.value)
+          }}
           placeholder="How will this help another student save time, money, or effort?"
           className={cn(field, 'resize-none leading-relaxed')}
         />
