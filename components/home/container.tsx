@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import {useCallback,useEffect, useState } from 'react'
 import Link from 'next/link'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion, type PanInfo } from 'motion/react'
 import {
   ArrowRight,
   BadgeCheck,
@@ -128,18 +128,22 @@ function Empty({ text }: { text: string }) {
 const card = 'rounded-2xl border border-slate-200 bg-white p-3 shadow-sm'
 
 function FeaturedTools({ resources }: { resources: Resource[] }) {
-  const [activeIndex, setActiveIndex] = useState(0)
+  const [[activeIndex, direction], setSlide] = useState<[number, number]>([0, 1])
   const resource = resources[activeIndex]
 
+  const paginate = useCallback(
+    (dir: number) => {
+      setSlide(([current]) => [(current + dir + resources.length) % resources.length, dir])
+    },
+    [resources.length],
+  )
+
+  // Depends on activeIndex, so any manual swipe/click restarts the 4.5s timer
   useEffect(() => {
     if (resources.length < 2) return
-
-    const timer = window.setInterval(() => {
-      setActiveIndex((current) => (current + 1) % resources.length)
-    }, 4500)
-
+    const timer = window.setInterval(() => paginate(1), 4500)
     return () => window.clearInterval(timer)
-  }, [resources.length])
+  }, [resources.length, activeIndex, paginate])
 
   const slideTones = [
     'bg-[#dce6a2]',
@@ -150,42 +154,70 @@ function FeaturedTools({ resources }: { resources: Resource[] }) {
     'bg-[#dce7d0]',
   ]
 
+  const variants = {
+    enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%' }),
+    center: { x: 0 },
+    exit: (dir: number) => ({ x: dir > 0 ? '-100%' : '100%' }),
+  }
+
+  const SWIPE_DISTANCE = 60
+  const SWIPE_VELOCITY = 400
+
+  const handleDragEnd = (_: unknown, info: PanInfo) => {
+    if (resources.length < 2) return
+    if (info.offset.x < -SWIPE_DISTANCE || info.velocity.x < -SWIPE_VELOCITY) {
+      paginate(1) // swiped left -> next
+    } else if (info.offset.x > SWIPE_DISTANCE || info.velocity.x > SWIPE_VELOCITY) {
+      paginate(-1) // swiped right -> previous
+    }
+  }
+
   return (
     <div className="space-y-3">
       <div className="relative min-h-[280px] overflow-hidden rounded-[22px]">
-      <AnimatePresence initial={false} mode="sync">
-      <motion.article
-        key={resource.id}
-        initial={{ x: '100%' }}
-        animate={{ x: 0 }}
-        exit={{ x: '-100%' }}
-        transition={{ duration: 0.45, ease: 'easeInOut' }}
-        className={`absolute inset-0 overflow-hidden rounded-[22px] p-6 ${slideTones[activeIndex % slideTones.length]}`}
-      >
-      <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(#68713d_1.5px,transparent_1.5px)] [background-size:18px_18px]" />
-      <div className="relative z-10 max-w-[72%]">
-        <span className="inline-block bg-[#9b65ff] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
-          Featured tool
-        </span>
-        <h1 className="mt-3 font-serif text-[34px] font-black leading-[0.96] tracking-[-0.04em] text-slate-950">
-          {resource.title}
-        </h1>
-        <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-slate-700">{resource.description}</p>
-        <a
-          href={resource.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-5 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800"
-        >
-          Try it free <ArrowRight className="h-4 w-4" aria-hidden />
-        </a>
+        <AnimatePresence initial={false} mode="sync" custom={direction}>
+          <motion.article
+            key={resource.id}
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.45, ease: 'easeInOut' }}
+            drag={resources.length > 1 ? 'x' : false}
+            dragDirectionLock
+            dragSnapToOrigin
+            dragElastic={0.2}
+            onDragEnd={handleDragEnd}
+            className={`absolute inset-0 touch-pan-y cursor-grab overflow-hidden rounded-[22px] p-6 active:cursor-grabbing ${slideTones[activeIndex % slideTones.length]}`}
+          >
+            <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:radial-gradient(#68713d_1.5px,transparent_1.5px)] [background-size:18px_18px]" />
+            <div className="relative z-10 max-w-[72%]">
+              <span className="inline-block bg-[#9b65ff] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+                Featured tool
+              </span>
+              <h1 className="mt-3 font-serif text-[34px] font-black leading-[0.96] tracking-[-0.04em] text-slate-950">
+                {resource.title.slice(0, 60)}...
+              </h1>
+              <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-slate-700">
+                {resource.description.slice(0, 100)}...
+              </p>
+              <a
+                href={resource.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                draggable={false}
+                className="mt-5 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800">
+                Try it free <ArrowRight className="h-4 w-4" aria-hidden />
+              </a>
+            </div>
+            <div className="pointer-events-none absolute -bottom-12 -right-12 grid h-48 w-48 place-items-center rounded-full bg-white/70 shadow-2xl">
+              <ResourceThumbnail url={resource.url}  />
+            </div>
+          </motion.article>
+        </AnimatePresence>
       </div>
-      <div className="absolute -bottom-12 -right-12 grid h-48 w-48 place-items-center rounded-full bg-white/70 shadow-2xl">
-        <ResourceThumbnail url={resource.url} />
-      </div>
-      </motion.article>
-      </AnimatePresence>
-      </div>
+
       <div className="flex justify-center gap-1.5" aria-label="Featured tool slides">
         {resources.map((item, index) => (
           <button
@@ -193,7 +225,7 @@ function FeaturedTools({ resources }: { resources: Resource[] }) {
             type="button"
             aria-label={`Show featured tool ${index + 1}`}
             aria-current={index === activeIndex ? 'true' : undefined}
-            onClick={() => setActiveIndex(index)}
+            onClick={() => setSlide([index, index > activeIndex ? 1 : -1])}
             className={`h-1.5 rounded-full transition-all ${index === activeIndex ? 'w-6 bg-slate-950' : 'w-1.5 bg-slate-300'}`}
           />
         ))}
