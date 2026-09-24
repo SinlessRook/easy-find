@@ -3,7 +3,7 @@ import TopBar from '@/components/layout/top-bar'
 import BottomBar from '@/components/layout/bottom-bar'
 import Container from '@/components/home/container'
 import SplashScreen from '@/components/auth/splash-screen'
-import {api} from "@/lib/axios"
+import { api } from '@/lib/axios'
 
 export default async function Home({
   searchParams,
@@ -12,20 +12,16 @@ export default async function Home({
 }) {
 const { q = '', tag = '' } = await searchParams
 
-const supabase = await createClient()
-const {
-  data: { user },
-} = await supabase.auth.getUser()
-
 const term = q.toLowerCase()
 
-const response = await api.get('/resources', {
-  params: {
-    top: true,
-    limit: 6,
-  },
-})
-const queriesResponse = await api.get('/queries')
+const supabase = await createClient()
+const [authResult, response, queriesResponse] = await Promise.all([
+  supabase.auth.getUser(),
+  api.get('/resources', { params: { top: true, limit: 6 } }),
+  api.get('/queries'),
+])
+
+const { data: { user } } = authResult
 
 let resources = response.data.data
   if (tag === 'trending') resources = [...resources].sort((a, b) => b.score - a.score)

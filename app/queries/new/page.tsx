@@ -33,12 +33,11 @@ export default async function NewQueryPage({
 		)
 	}
 
-	const { data: profile } = await supabase
-		.from('users')
-		.select('username')
-		.eq('id', user.id)
-		.single()
-	const sectionsResponse = await api.get<{ data: { slug: string; name: string }[] }>('/sections')
+	const [profileResult, sectionsResponse] = await Promise.all([
+		supabase.from('users').select('username').eq('id', user.id).single(),
+		api.get<{ data: { slug: string; name: string }[] }>('/sections'),
+	])
+	const { data: profile } = profileResult
 	const sections = sectionsResponse.data.data
 
 	const avatarUrl =

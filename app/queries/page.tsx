@@ -9,8 +9,10 @@ import { api } from '@/lib/axios'
 export const metadata: Metadata = { title: 'Queries | EzyFind' }
 
 export default async function QueriesPage() {
-  const user = await getTopBarUser()
-  const response = await api.get('/queries')
+  const [user, response] = await Promise.all([
+    getTopBarUser(),
+    api.get('/queries'),
+  ])
   const queries = response.data.data.map((query: {
     id: string
     title: string

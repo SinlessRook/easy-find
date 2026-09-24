@@ -21,16 +21,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CategoryPage({ params }: Props) {
   const { slug } = await params
 
- const response = await api.get('/resources', {
-  params: {
-    section: slug,
-  },
-})
+ const [response, user] = await Promise.all([
+  api.get('/resources', { params: { section: slug } }),
+  getTopBarUser(),
+ ])
 const category = response.data.data
   if (!category) notFound()
 
   const resources =category;
-  const user = await getTopBarUser()
 
   return (
     <div className="min-h-screen bg-slate-50">

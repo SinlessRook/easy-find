@@ -8,8 +8,10 @@ import {api} from "@/lib/axios"
 export const metadata = { title: 'Categories | EzyFind' }
 
 export default async function CategoriesPage() {
-  const user = await getTopBarUser()
-  const response = await api.get<{ data: Category[] }>('/sections')
+  const [user, response] = await Promise.all([
+    getTopBarUser(),
+    api.get<{ data: Category[] }>('/sections'),
+  ])
   const categories = response.data.data
   return (
     <div className="min-h-screen bg-white">

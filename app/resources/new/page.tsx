@@ -18,9 +18,11 @@ export default async function NewResourcePage({
   const { section } = await searchParams
 
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const [authResult, sectionsResponse] = await Promise.all([
+    supabase.auth.getUser(),
+    api.get<{ data: { slug: string; name: string }[] }>('/sections'),
+  ])
+  const { data: { user } } = authResult
 
   if (!user) {
     return (
@@ -39,7 +41,6 @@ export default async function NewResourcePage({
     (user.user_metadata?.picture as string | undefined) ??
     null
 
-  const sectionsResponse = await api.get<{ data: { slug: string; name: string }[] }>('/sections')
   const sections = sectionsResponse.data.data
 
   // Only accept a ?section= that matches a real section
