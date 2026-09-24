@@ -40,7 +40,7 @@ let resources = response.data.data
       expiresAt: query.expiry_date,
       answers: 0,
       participants: [],
-      author: { username: query.created_by },
+      author: { username: query.created_by},
     }))
     .filter((query: { title: string }) => !term || query.title.toLowerCase().includes(term))
 
