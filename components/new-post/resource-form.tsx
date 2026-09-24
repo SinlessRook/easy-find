@@ -366,6 +366,23 @@ export default function ResourceForm({
         </p>
       </div>
 
+            {/* Category */}
+      <div>
+        <label
+          htmlFor="section"
+          className="mb-2 block text-[17px] font-semibold text-slate-900"
+        >
+          Category / Student Need
+        </label>
+
+        <CategoryMultiSelect
+          categories={categories}
+          defaultSection={defaultSection}
+          onChange={setSection}
+          error={errors.section}
+        />
+      </div>
+
       {/* Title */}
       <div>
         <div className="mb-2 flex items-center justify-between">
@@ -405,22 +422,6 @@ export default function ResourceForm({
         )}
       </div>
 
-      {/* Category */}
-      <div>
-        <label
-          htmlFor="section"
-          className="mb-2 block text-[17px] font-semibold text-slate-900"
-        >
-          Category / Student Need
-        </label>
-
-        <CategoryMultiSelect
-          categories={categories}
-          defaultSection={defaultSection}
-          onChange={setSection}
-          error={errors.section}
-        />
-      </div>
 
       {/* Why it's helpful */}
       <div>
