@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import { api } from '@/lib/axios'
 import { CloseButton } from '@/components/new-post/new-post-chrome'
 import PostTypeTabs from '@/components/new-post/post-type-tabs'
 import ResourceForm from '@/components/new-post/resource-form'
@@ -18,9 +17,9 @@ export default async function NewResourcePage({
   const { section } = await searchParams
 
   const supabase = await createClient()
-  const [authResult, sectionsResponse] = await Promise.all([
+  const [authResult, sectionsResult] = await Promise.all([
     supabase.auth.getUser(),
-    api.get<{ data: { slug: string; name: string }[] }>('/sections'),
+    supabase.from('distinct_sections').select('section').order('section'),
   ])
   const { data: { user } } = authResult
 
@@ -41,7 +40,10 @@ export default async function NewResourcePage({
     (user.user_metadata?.picture as string | undefined) ??
     null
 
-  const sections = sectionsResponse.data.data
+  const sections = (sectionsResult.data ?? []).map((row) => ({
+    slug: row.section,
+    name: row.section.replace(/-/g, ' ').replace(/\b\w/g, (character: string) => character.toUpperCase()),
+  }))
 
   // Only accept a ?section= that matches a real section
   const defaultSection = sections.find((item) => item.slug === section)?.slug ?? ''

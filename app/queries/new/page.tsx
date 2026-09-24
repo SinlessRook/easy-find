@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import { api } from '@/lib/axios'
 import { CloseButton } from '@/components/new-post/new-post-chrome'
 import PostTypeTabs from '@/components/new-post/post-type-tabs'
 import QueryForm from '@/components/new-post/query-form'
@@ -33,12 +32,15 @@ export default async function NewQueryPage({
 		)
 	}
 
-	const [profileResult, sectionsResponse] = await Promise.all([
+	const [profileResult, sectionsResult] = await Promise.all([
 		supabase.from('users').select('username').eq('id', user.id).single(),
-		api.get<{ data: { slug: string; name: string }[] }>('/sections'),
+		supabase.from('distinct_sections').select('section').order('section'),
 	])
 	const { data: profile } = profileResult
-	const sections = sectionsResponse.data.data
+	const sections = (sectionsResult.data ?? []).map((row) => ({
+		slug: row.section,
+		name: row.section.replace(/-/g, ' ').replace(/\b\w/g, (character: string) => character.toUpperCase()),
+	}))
 
 	const avatarUrl =
 		(user.user_metadata?.avatar_url as string | undefined) ??
