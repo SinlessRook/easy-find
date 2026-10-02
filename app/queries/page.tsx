@@ -28,6 +28,7 @@ export default async function QueriesPage() {
   const queries = response.data.data.map((query: {
     id: string
     title: string
+    description: string | null
     created_at: string
     expiry_date: string
     created_by: string
@@ -35,6 +36,7 @@ export default async function QueriesPage() {
   }) => ({
     id: query.id,
     title: query.title,
+    description: query.description,
     status: 'open' as const,
     createdAt: query.created_at,
     expiresAt: query.expiry_date,

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Check, Clock, MessageCircle, Share2, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Check, Clock, MessageCircle, Share2, Trash2, X } from 'lucide-react'
 import type { Query } from '@/lib/mock-data'
 import { timeAgo } from '@/lib/time'
 import { api } from '@/lib/axios'
@@ -43,6 +43,19 @@ export default function QueryList({
   const [deleteError, setDeleteError] = useState('')
   const [signInOpen, setSignInOpen] = useState(false)
   const [sharedQueryId, setSharedQueryId] = useState<string | null>(null)
+  const [selectedQuery, setSelectedQuery] = useState<QueryWithOwner | null>(null)
+  const [touchStartY, setTouchStartY] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!selectedQuery) return
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setSelectedQuery(null)
+    }
+
+    document.addEventListener('keydown', closeOnEscape)
+    return () => document.removeEventListener('keydown', closeOnEscape)
+  }, [selectedQuery])
 
   async function shareQuery(query: QueryWithOwner) {
     const url = typeof window === 'undefined' ? '/queries' : `${window.location.origin}/queries`
@@ -107,7 +120,19 @@ export default function QueryList({
         const contactMessage = `Hey, I responded regarding "${query.title}" on EzyFind.`
 
         return (
-        <article key={query.id} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+        <article
+          key={query.id}
+          role="button"
+          tabIndex={0}
+          onClick={() => setSelectedQuery(query)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              setSelectedQuery(query)
+            }
+          }}
+          className="cursor-pointer rounded-2xl border border-slate-100 bg-white p-3 shadow-sm transition hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+        >
           <header className="flex items-center justify-between gap-3">
             <span className="truncate text-xs font-medium text-slate-500">@{query.author.username}</span>
             <span className="flex shrink-0 items-center gap-1 font-mono text-[11px] text-slate-400">
@@ -118,7 +143,7 @@ export default function QueryList({
           <h2 className="mt-1.5 text-lg font-bold leading-snug text-slate-900">
             {query.title}
           </h2>
-          <footer className="mt-2.5 flex justify-end">
+          <footer onClick={(event) => event.stopPropagation()} className="mt-2.5 flex justify-end">
             <button
               type="button"
               aria-label="Share query"
@@ -179,6 +204,75 @@ export default function QueryList({
         )
       })}
       <SignInDialog open={signInOpen} onOpenChange={setSignInOpen} next="/queries" />
+      {selectedQuery && (
+        <div
+          className="fixed inset-0 z-[9999] grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setSelectedQuery(null)
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="query-detail-title"
+            onTouchStart={(event) => setTouchStartY(event.touches[0]?.clientY ?? null)}
+            onTouchEnd={(event) => {
+              if (touchStartY !== null && (event.changedTouches[0]?.clientY ?? touchStartY) - touchStartY > 80) {
+                setSelectedQuery(null)
+              }
+              setTouchStartY(null)
+            }}
+            onClick={(event) => event.stopPropagation()}
+            className="relative w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl"
+          >
+            <button
+              type="button"
+              aria-label="Close query details"
+              onClick={() => setSelectedQuery(null)}
+              className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-950"
+            >
+              <X className="h-5 w-5" aria-hidden />
+            </button>
+            <p className="pr-10 text-xs font-medium text-slate-500">@{selectedQuery.author.username}</p>
+            <h2 id="query-detail-title" className="mt-2 pr-10 text-xl font-bold leading-snug text-slate-950">
+              {selectedQuery.title}
+            </h2>
+            <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-600">
+              {selectedQuery.description || 'No additional details were provided for this query.'}
+            </p>
+            <div className="mt-6 flex justify-end border-t border-slate-100 pt-4">
+              {whatsappHref(selectedQuery.contactNum) && currentUserId ? (
+                <a
+                  href={`${whatsappHref(selectedQuery.contactNum)}?text=${encodeURIComponent(`Hey, I responded regarding "${selectedQuery.title}" on EzyFind.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Contact ${selectedQuery.author.username} on WhatsApp`}
+                  title="Contact on WhatsApp"
+                  className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
+                >
+                  <WhatsAppIcon />
+                  Contact on WhatsApp
+                </a>
+              ) : !currentUserId ? (
+                <button
+                  type="button"
+                  onClick={() => setSignInOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
+                >
+                  <WhatsAppIcon />
+                  Sign in to contact
+                </button>
+              ) : (
+                <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-400">
+                  <MessageCircle className="h-5 w-5" aria-hidden />
+                  No contact number
+                </span>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   )
 }

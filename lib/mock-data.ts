@@ -16,6 +16,7 @@ export type Resource = {
 export type Query = {
   id: string
   title: string
+  description?: string | null
   status: 'open' | 'solved'
   createdAt: string
   expiresAt: string
