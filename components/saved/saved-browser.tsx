@@ -36,6 +36,39 @@ function displayName(href: string, title: string) {
   return words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }
 
+function SavedResourceIcon({ href }: { href: string }) {
+  const [failed, setFailed] = useState(false)
+  const domain = domainOf(href)
+
+  if (!domain || failed) {
+    return (
+      <span className="grid h-12 w-12 place-items-center rounded-xl bg-white text-slate-500">
+        <Link2 className="h-7 w-7" strokeWidth={1.8} aria-hidden />
+      </span>
+    )
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`}
+      alt=""
+      loading="lazy"
+      onError={(event) => {
+        event.currentTarget.style.display = 'none'
+        setFailed(true)
+      }}
+      onLoad={(event) => {
+        if (event.currentTarget.naturalWidth === 0) {
+          event.currentTarget.style.display = 'none'
+          setFailed(true)
+        }
+      }}
+      className="h-12 w-12 rounded-xl bg-white p-2 object-contain"
+    />
+  )
+}
+
 type Props = { isAuthenticated: boolean }
 
 export default function SavedBrowser({ isAuthenticated }: Props) {
@@ -128,7 +161,6 @@ export default function SavedBrowser({ isAuthenticated }: Props) {
 
       <div className="grid grid-cols-3 gap-4">
       {visibleItems.map((item) => {
-        const domain = domainOf(item.href)
         const label = displayName(item.href, item.title)
         return (
           <a
@@ -140,17 +172,7 @@ export default function SavedBrowser({ isAuthenticated }: Props) {
             title={item.title}
             className={`flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl border border-white/70 p-3 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${item.tone}`}
           >
-            {domain ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={`https://icons.duckduckgo.com/ip3/${domain}.ico`}
-                alt=""
-                loading="lazy"
-                className="h-12 w-12 rounded-xl bg-white p-2 object-contain"
-              />
-            ) : (
-              <Link2 className="h-10 w-10" strokeWidth={1.8} aria-hidden />
-            )}
+            <SavedResourceIcon href={item.href} />
             <span className="max-w-full truncate text-xs font-semibold">{label}</span>
           </a>
         )
