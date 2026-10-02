@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { BookOpen, LogOut, Maximize2, Menu, Minimize2, UserRound } from 'lucide-react'
+import { BookOpen, GitBranch, LogOut, Maximize2, Menu, Minimize2, UserRound } from 'lucide-react'
 import { signOut } from '@/app/actions/auth'
 import SignInDialog from '@/components/auth/sign-in-dialog'
 
@@ -10,6 +10,22 @@ type Props = {
   user: { id?: string; name?: string | null; avatarUrl?: string | null } | null
   subtitle?: string // small label under the logo, e.g. "Explore" or "Categories"
   showSignIn?: boolean
+}
+
+function GithubMark() {
+  const [failed, setFailed] = useState(false)
+
+  if (failed) return <GitBranch className="h-5 w-5" aria-hidden />
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="https://cdn.simpleicons.org/github"
+      alt=""
+      className="h-5 w-5"
+      onError={() => setFailed(true)}
+    />
+  )
 }
 
 export default function TopBar({ user, subtitle = 'Explore', showSignIn = true }: Props) {
@@ -47,6 +63,16 @@ export default function TopBar({ user, subtitle = 'Explore', showSignIn = true }
         </Link>
 
         <div className="flex items-center gap-2">
+          <a
+            href="https://github.com/SinlessRook/easy-find"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open EzyFind on GitHub"
+            title="EzyFind on GitHub"
+            className="grid h-10 w-10 place-items-center rounded-full text-slate-800 hover:bg-slate-100"
+          >
+            <GithubMark />
+          </a>
           <button
             type="button"
             aria-label="Open navigation menu"
