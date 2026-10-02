@@ -1,10 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'motion/react'
 import { ArrowUpDown, ChevronDown, Search, X } from 'lucide-react'
 import type { CategoryResource } from '@/lib/mock-category-resources'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
+import { api } from '@/lib/axios'
 import CategoryResourceCard, { helpfulPercent } from './resource-card'
 
 type Tab = { label: string; value: string }
@@ -28,6 +30,50 @@ export default function ResourceBrowser({
   const [query, setQuery] = useState('')
   const [kind, setKind] = useState('')
   const [sort, setSort] = useState<Sort>('helpful')
+  const [isSignedIn, setIsSignedIn] = useState(false)
+  const [activity, setActivity] = useState<Record<string, { userVote: -1 | 0 | 1; isSaved: boolean }>>({})
+
+  useEffect(() => {
+    let active = true
+    const supabase = createClient()
+
+    async function syncActivity() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!active) return
+
+      setIsSignedIn(Boolean(user))
+      if (!user) {
+        setActivity({})
+        return
+      }
+
+      try {
+        const response = await api.get('/user/me')
+        if (!active) return
+        setActivity(
+          Object.fromEntries(
+            (response.data?.data ?? []).map((item: { id: string; userVote: -1 | 0 | 1; isSaved: boolean }) => [
+              item.id,
+              { userVote: item.userVote, isSaved: item.isSaved },
+            ])
+          )
+        )
+      } catch {
+        if (active) setActivity({})
+      }
+    }
+
+    void syncActivity()
+
+    const { data: subscription } = supabase.auth.onAuthStateChange(() => {
+      void syncActivity()
+    })
+
+    return () => {
+      active = false
+      subscription.subscription.unsubscribe()
+    }
+  }, [])
 
   const visible = useMemo(() => {
     const term = query.trim().toLowerCase()
@@ -133,7 +179,14 @@ export default function ResourceBrowser({
         <ul className="divide-y divide-slate-100">
           {visible.map((r) => (
             <li key={r.id} className="min-w-0">
-              <CategoryResourceCard resource={r} />
+              <CategoryResourceCard
+                resource={{
+                  ...r,
+                  userVote: activity[r.id]?.userVote ?? r.userVote ?? 0,
+                  isSaved: activity[r.id]?.isSaved ?? Boolean((r as CategoryResource & { isSaved?: boolean }).isSaved),
+                }}
+                isSignedIn={isSignedIn}
+              />
             </li>
           ))}
         </ul>

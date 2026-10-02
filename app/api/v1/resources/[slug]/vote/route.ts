@@ -111,6 +111,7 @@ export async function POST(
     data: {
       resourceId: id,
       userVote: vote,
+      isSaved: true,
       score: totals.score,
       upvotes: totals.upvotes,
       downvotes: totals.downvotes,

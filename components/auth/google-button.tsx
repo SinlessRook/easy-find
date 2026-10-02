@@ -13,7 +13,7 @@ export default function GoogleButton({ next = '/' }: { next?: string }) {
     const { error } = await createClient().auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     })
     // On success the browser navigates to Google, so we only land here on error

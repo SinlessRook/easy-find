@@ -68,10 +68,12 @@ export async function GET(request: Request) {
     )
   }
 
+
   const items = data.map((r) => {
     // When filtering, report the section that was asked for so the response
     // matches the request even if it is not the first element of the array.
     const primary = section ?? r.sections?.[0] ?? ''
+    const vote = supabase.from('votes').select('vote').eq('resource_id', r.id).maybeSingle()
     return {
       id: r.id,
       section: primary,
@@ -81,13 +83,11 @@ export async function GET(request: Request) {
       url: r.link,
       tag: primary,
       tagTone: 'indigo' as const, // TODO: derive from the section name
-      userVote: 0, // TODO: get the signed-in user's vote from the votes table
+      userVote: vote || 0, // TODO: get the signed-in user's vote from the votes table
       createdAt: r.created_at,
       upvotes: r.upvotes,
       downvotes: r.downvotes,
-      // COLUMNS deliberately excludes created_by, so it is not available here (and a raw
-      // uuid should not be shown as a username anyway). TODO: expose a public username
-      // from a profiles table via the view, then read it here.
+      issaved: false,
       author: { username: 'Unknown' },
     }
   })

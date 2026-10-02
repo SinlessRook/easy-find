@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 
-//   PUT    /api/v1/user/me/saved/{resourceId}   save it
-//   DELETE /api/v1/user/me/saved/{resourceId}   unsave it
+//   PUT    /api/v1/resources/{resourceId}/save   save it
+//   DELETE /api/v1/resources/{resourceId}/save   unsave it
 // Both require a logged-in user and are idempotent (safe to repeat).
 
-type Context = { params: Promise<{ resourceId: string }> }
+type Context = { params: Promise<{ slug: string }> }
 
 const idSchema = z.string().uuid('resourceId must be a valid id')
 
@@ -25,7 +25,7 @@ function invalidId(message: string) {
 }
 
 export async function PUT(_request: Request, { params }: Context) {
-  const parsedId = idSchema.safeParse((await params).resourceId)
+  const parsedId = idSchema.safeParse((await params).slug)
   if (!parsedId.success) return invalidId(parsedId.error.issues[0].message)
   const resourceId = parsedId.data
 
@@ -62,7 +62,7 @@ export async function PUT(_request: Request, { params }: Context) {
 }
 
 export async function DELETE(_request: Request, { params }: Context) {
-  const parsedId = idSchema.safeParse((await params).resourceId)
+  const parsedId = idSchema.safeParse((await params).slug)
   if (!parsedId.success) return invalidId(parsedId.error.issues[0].message)
   const resourceId = parsedId.data
 

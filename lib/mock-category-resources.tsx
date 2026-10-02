@@ -17,6 +17,7 @@ export type CategoryResource = {
   upvotes: number
   downvotes: number
   userVote: -1 | 0 | 1 // the signed-in user's vote (from the votes table)
+  isSaved?: boolean
   createdAt: string
   author: { username: string; avatarUrl?: string | null }
 }
