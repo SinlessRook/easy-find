@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { createClient } from '@/lib/supabase/server'
 import TopBar from '@/components/layout/top-bar'
 import BottomBar from '@/components/layout/bottom-bar'
 import { getTopBarUser } from '@/lib/get-user'
@@ -13,12 +14,24 @@ export default async function QueriesPage() {
     getTopBarUser(),
     api.get('/queries'),
   ])
+  const contactByQuery = new Map<string, string | null>()
+  if (user?.id && response.data.data.length > 0) {
+    const supabase = await createClient()
+    const { data: contactRows } = await supabase
+      .from('queries')
+      .select('id, contact_num')
+      .in('id', response.data.data.map((query: { id: string }) => query.id))
+
+    for (const row of contactRows ?? []) contactByQuery.set(row.id, row.contact_num)
+  }
+
   const queries = response.data.data.map((query: {
     id: string
     title: string
     created_at: string
     expiry_date: string
     created_by: string
+    contact_num: string | null
   }) => ({
     id: query.id,
     title: query.title,
@@ -28,9 +41,9 @@ export default async function QueriesPage() {
     answers: 0,
     participants: [],
     createdBy: query.created_by,
+    contactNum: contactByQuery.get(query.id) ?? query.contact_num,
     author: { username: query.created_by },
   }))
-
   return (
     <div className="min-h-screen bg-slate-50">
       <TopBar user={user} subtitle="Queries" />

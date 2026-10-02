@@ -6,10 +6,12 @@ import { AnimatePresence, motion, type PanInfo } from 'motion/react'
 import {
   ArrowRight,
   BadgeCheck,
+  Check,
   Clock,
   ExternalLink,
   MessageCircle,
   MessagesSquare,
+  Share2,
   ThumbsDown,
   ThumbsUp,
   Zap,
@@ -377,6 +379,29 @@ function ResourceCard({ resource: r }: { resource: Resource }) {
 /* ---------------------------------------------------------------- */
 
 function QueryCard({ query: q }: { query: Query }) {
+  const [shared, setShared] = useState(false)
+
+  async function shareQuery() {
+    const url = typeof window === 'undefined' ? '/queries' : `${window.location.origin}/queries`
+    const shareData = {
+      title: q.title,
+      text: `Check out this campus query: ${q.title}`,
+      url,
+    }
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData)
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url)
+        setShared(true)
+        window.setTimeout(() => setShared(false), 1500)
+      }
+    } catch {
+      // The user cancelled sharing or clipboard access was unavailable.
+    }
+  }
+
   return (
     <article className={card}>
       <header className="flex items-center justify-between gap-3">
@@ -389,15 +414,24 @@ function QueryCard({ query: q }: { query: Query }) {
 
       <h3 className="mt-1.5 text-lg font-bold leading-snug text-slate-900">{q.title}</h3>
 
-      <footer className="mt-2.5 flex justify-end">
+      <footer className="mt-2.5 flex justify-end gap-1">
         <button
           type="button"
-          aria-label="Contact on WhatsApp"
-          title="Contact on WhatsApp"
-          className="grid h-9 w-9 place-items-center rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+          aria-label="Share query"
+          title="Share query"
+          onClick={() => void shareQuery()}
+          className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
+        >
+          {shared ? <Check className="h-4 w-4 text-emerald-600" aria-hidden /> : <Share2 className="h-4 w-4" aria-hidden />}
+        </button>
+        <Link
+          href="/queries"
+          aria-label="Open queries to contact the poster"
+          title="Open queries"
+          className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-green-500 hover:bg-slate-200"
         >
           <MessageCircle className="h-5 w-5" aria-hidden />
-        </button>
+        </Link>
       </footer>
     </article>
   )

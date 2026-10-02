@@ -99,7 +99,7 @@ export function scrollFocusedField(event: React.FocusEvent<HTMLElement>) {
   if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement)) return
 
   window.setTimeout(() => {
-    const targetTop = Math.max(72, Math.round(window.innerHeight * 0.08))
+    const targetTop = Math.max(80, Math.round(window.innerHeight * 0.12))
     const distance = target.getBoundingClientRect().top - targetTop
     if (distance > 0) window.scrollBy({ top: distance, behavior: 'smooth' })
   }, 120)

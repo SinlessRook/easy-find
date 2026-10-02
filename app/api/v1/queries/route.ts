@@ -18,6 +18,9 @@ function errorResponse(status: number, code: string, message: string, fields?: R
 
 export async function GET() {
 	const supabase = await createClient()
+	const {
+		data: { user },
+	} = await supabase.auth.getUser()
 
 	const { data, error } = await supabase
 		.from('queries')
@@ -50,6 +53,7 @@ export async function GET() {
 		return {
 			...rest,
 			created_by,
+			contact_num: user ? query.contact_num : null,
 		}
 	})
 

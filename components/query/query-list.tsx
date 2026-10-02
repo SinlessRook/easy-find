@@ -1,12 +1,35 @@
 'use client'
 
 import { useState } from 'react'
-import { Clock, MessageCircle, Trash2 } from 'lucide-react'
+import { Check, Clock, MessageCircle, Share2, Trash2 } from 'lucide-react'
 import type { Query } from '@/lib/mock-data'
 import { timeAgo } from '@/lib/time'
 import { api } from '@/lib/axios'
+import SignInDialog from '@/components/auth/sign-in-dialog'
 
 type QueryWithOwner = Query & { createdBy: string }
+
+function WhatsAppIcon() {
+  const [failed, setFailed] = useState(false)
+
+  if (failed) return <MessageCircle className="h-5 w-5" aria-hidden />
+
+  return (
+    // Simple Icons provides the official WhatsApp mark; keep a local fallback if the asset is unavailable.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="https://cdn.simpleicons.org/whatsapp/25D366"
+      alt=""
+      className="h-5 w-5"
+      onError={() => setFailed(true)}
+    />
+  )
+}
+
+function whatsappHref(contactNum?: string | null) {
+  const digits = contactNum?.replace(/\D/g, '')
+  return digits ? `https://wa.me/${digits}` : null
+}
 
 export default function QueryList({
   queries: initialQueries,
@@ -18,6 +41,29 @@ export default function QueryList({
   const [queries, setQueries] = useState(initialQueries)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState('')
+  const [signInOpen, setSignInOpen] = useState(false)
+  const [sharedQueryId, setSharedQueryId] = useState<string | null>(null)
+
+  async function shareQuery(query: QueryWithOwner) {
+    const url = typeof window === 'undefined' ? '/queries' : `${window.location.origin}/queries`
+    const shareData = {
+      title: query.title,
+      text: `Check out this campus query: ${query.title}`,
+      url,
+    }
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData)
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url)
+        setSharedQueryId(query.id)
+        window.setTimeout(() => setSharedQueryId(null), 1500)
+      }
+    } catch {
+      // The user cancelled sharing or clipboard access was unavailable.
+    }
+  }
 
   async function deleteQuery(id: string) {
     if (deletingId || !window.confirm('Delete this query?')) return
@@ -56,7 +102,11 @@ export default function QueryList({
   return (
     <div className="space-y-3">
       {deleteError && <p role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{deleteError}</p>}
-      {queries.map((query) => (
+      {queries.map((query) => {
+        const contactUrl = whatsappHref(query.contactNum)
+        const contactMessage = `Hey, I responded regarding "${query.title}" on EzyFind.`
+
+        return (
         <article key={query.id} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
           <header className="flex items-center justify-between gap-3">
             <span className="truncate text-xs font-medium text-slate-500">@{query.author.username}</span>
@@ -69,6 +119,19 @@ export default function QueryList({
             {query.title}
           </h2>
           <footer className="mt-2.5 flex justify-end">
+            <button
+              type="button"
+              aria-label="Share query"
+              title="Share query"
+              onClick={() => void shareQuery(query)}
+              className="mr-2 grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
+            >
+              {sharedQueryId === query.id ? (
+                <Check className="h-4 w-4 text-emerald-600" aria-hidden />
+              ) : (
+                <Share2 className="h-4 w-4" aria-hidden />
+              )}
+            </button>
             {currentUserId === query.createdBy && (
               <button
                 type="button"
@@ -81,17 +144,41 @@ export default function QueryList({
                 <Trash2 className="h-4 w-4" aria-hidden />
               </button>
             )}
-            <button
-              type="button"
-              aria-label={`Contact ${query.author.username} on WhatsApp`}
-              title="Contact on WhatsApp"
-              className="grid h-9 w-9 place-items-center rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-            >
-              <MessageCircle className="h-5 w-5" aria-hidden />
-            </button>
+            {contactUrl && currentUserId ? (
+              <a
+                href={`${contactUrl}?text=${encodeURIComponent(contactMessage)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Contact ${query.author.username} on WhatsApp`}
+                title="Contact on WhatsApp"
+                className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-slate-950 hover:bg-slate-200"
+              >
+                <WhatsAppIcon />
+              </a>
+            ) : !currentUserId ? (
+              <button
+                type="button"
+                onClick={() => setSignInOpen(true)}
+                aria-label="Sign in to contact this user"
+                title="Sign in to contact"
+                className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-slate-950 hover:bg-slate-200"
+              >
+                <WhatsAppIcon />
+              </button>
+            ) : (
+              <span
+                aria-label="No contact number provided"
+                title="No contact number provided"
+                className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-slate-300"
+              >
+                <MessageCircle className="h-5 w-5" aria-hidden />
+              </span>
+            )}
           </footer>
         </article>
-      ))}
+        )
+      })}
+      <SignInDialog open={signInOpen} onOpenChange={setSignInOpen} next="/queries" />
     </div>
   )
 }

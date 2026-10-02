@@ -22,6 +22,7 @@ export type Query = {
   answers: number
   participants: string[] // usernames, for the avatar stack
   author: { username: string }
+  contactNum?: string | null
 }
 
 const ago = (ms: number) => new Date(Date.now() - ms).toISOString()
