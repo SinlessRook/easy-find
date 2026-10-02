@@ -48,7 +48,7 @@ const category = response.data.data
       <TopBar user={user} subtitle="Categories" showSignIn={false} />
 
       <main className="mx-auto max-w-xl space-y-4 px-4 pb-44 pt-5">
-        <CategoryHeader name={category.name} count={category.count} />
+        <CategoryHeader name={category.name} count={10} />
         <ResourceBrowser
           resources={resources}
           tabs={kindTabs}
