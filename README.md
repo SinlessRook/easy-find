@@ -168,4 +168,4 @@ Please do not commit secrets, `.env.local`, generated build output, or unrelated
 
 EzyFind is available under the [MIT License](LICENSE).
 
-Made with <3 by Adithyan A S
+Made with ❤️ by Adithyan A S
