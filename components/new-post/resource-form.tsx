@@ -7,6 +7,7 @@ import { ApiError, api } from '@/lib/axios'
 import { cn } from '@/lib/utils'
 import FeedPreview from './feed-preview'
 import CategoryMultiSelect from './category-multi-select'
+import { scrollFocusedField } from './new-post-chrome'
 
 type Props = {
   categories: { slug: string; name: string }[]
@@ -69,7 +70,7 @@ function previewImageFor(value: string) {
 }
 
 const field =
-  'w-full rounded-xl border border-slate-100 bg-white px-4 py-3.5 text-[15px] text-slate-900 shadow-sm outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/40'
+  'w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-[15px] text-slate-900 shadow-sm outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-slate-950/20'
 
 export default function ResourceForm({
   categories,
@@ -263,7 +264,7 @@ export default function ResourceForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+    <form onSubmit={handleSubmit} onFocusCapture={scrollFocusedField} className="space-y-5" noValidate>
       {draftRaw && !draftHandled && (
         <div className="flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <p>You have a saved draft on this device.</p>
@@ -272,7 +273,7 @@ export default function ResourceForm({
             <button
               type="button"
               onClick={restoreDraft}
-              className="text-indigo-700 hover:underline"
+              className="text-slate-950 hover:underline"
             >
               Restore
             </button>
@@ -312,7 +313,7 @@ export default function ResourceForm({
               'flex items-center gap-1 font-mono text-xs font-medium',
               urlStatus === 'invalid'
                 ? 'text-red-600'
-                : 'text-emerald-700'
+                : 'text-slate-600'
             )}
             aria-live="polite"
           >
@@ -326,7 +327,7 @@ export default function ResourceForm({
           </span>
         </div>
 
-        <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white p-1.5 pl-4 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/40">
+        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 pl-4 shadow-sm focus-within:ring-2 focus-within:ring-slate-950/20">
           <Link2
             className="h-5 w-5 shrink-0 text-slate-500"
             aria-hidden
@@ -466,7 +467,7 @@ export default function ResourceForm({
       </div>
 
       {/* Health check message */}
-      <div className="flex items-start gap-3 rounded-2xl bg-emerald-200 p-4 text-emerald-950">
+      <div className="flex items-start gap-3 rounded-2xl bg-slate-100 p-4 text-slate-950">
         <BadgeCheck
           className="mt-0.5 h-7 w-7 shrink-0"
           aria-hidden
@@ -490,7 +491,7 @@ export default function ResourceForm({
         <button
           type="submit"
           disabled={pending}
-          className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-indigo-600 py-4 text-[17px] font-semibold text-white shadow-md shadow-indigo-600/25 hover:bg-indigo-700 disabled:opacity-70"
+          className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-slate-950 py-4 text-[17px] font-semibold text-white shadow-md shadow-slate-950/20 hover:bg-slate-800 disabled:opacity-70"
         >
           {pending ? (
             <LoaderCircle
@@ -507,7 +508,7 @@ export default function ResourceForm({
         <button
           type="button"
           onClick={saveDraft}
-          className="w-full rounded-2xl bg-indigo-50 py-4 text-[17px] font-semibold text-slate-900 hover:bg-indigo-100"
+          className="w-full rounded-2xl bg-slate-100 py-4 text-[17px] font-semibold text-slate-900 hover:bg-slate-200"
         >
           Save as Draft
         </button>

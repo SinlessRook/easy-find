@@ -1,5 +1,6 @@
 'use client'
 
+import { useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlignLeft, ArrowLeft, Share2, UserRound, X } from 'lucide-react'
 
@@ -86,9 +87,56 @@ export function CloseButton({ href = '/' }: { href?: string }) {
       type="button"
       onClick={close}
       aria-label="Close"
-      className="grid h-11 w-11 place-items-center rounded-full bg-indigo-100/80 text-slate-800 hover:bg-indigo-100"
+      className="grid h-11 w-11 place-items-center rounded-full bg-slate-950 text-white hover:bg-slate-800"
     >
       <X className="h-5 w-5" aria-hidden />
     </button>
+  )
+}
+
+export function scrollFocusedField(event: React.FocusEvent<HTMLElement>) {
+  const target = event.target
+  if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement)) return
+
+  window.setTimeout(() => {
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, 120)
+}
+
+export function PostSheet({ children, closeHref = '/' }: { children: ReactNode; closeHref?: string }) {
+  const router = useRouter()
+  const [touchStartY, setTouchStartY] = useState<number | null>(null)
+  const closing = useRef(false)
+
+  function close() {
+    if (closing.current) return
+    closing.current = true
+    document.querySelector<HTMLElement>('[data-post-sheet]')?.classList.add('post-sheet-closing')
+    window.setTimeout(() => router.push(closeHref), 220)
+  }
+
+  function handleTouchStart(event: React.TouchEvent<HTMLDivElement>) {
+    const target = event.target
+    if (!(target instanceof Element) || !target.closest('[data-sheet-drag-handle]')) return
+    setTouchStartY(event.touches[0]?.clientY ?? null)
+  }
+
+  function handleTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
+    if (touchStartY === null) return
+    const distance = (event.changedTouches[0]?.clientY ?? touchStartY) - touchStartY
+    setTouchStartY(null)
+    if (distance > 80) close()
+  }
+
+  return (
+    <div
+      data-post-sheet
+      className="min-h-screen bg-white"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={() => setTouchStartY(null)}
+    >
+      {children}
+    </div>
   )
 }

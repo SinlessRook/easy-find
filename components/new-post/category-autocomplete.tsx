@@ -99,7 +99,7 @@ const matches = useMemo(() => {
               type="button"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => choose(category)}
-              className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700"
+              className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-950"
             >
               {category.name}
               {category.slug === value && <Check className="h-4 w-4" aria-hidden />}
@@ -110,7 +110,7 @@ const matches = useMemo(() => {
               type="button"
               onMouseDown={(event) => event.preventDefault()}
               onClick={acceptNew}
-              className="flex w-full items-center gap-2 rounded-lg border-t border-slate-100 px-3 py-2.5 text-left text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+              className="flex w-full items-center gap-2 rounded-lg border-t border-slate-100 px-3 py-2.5 text-left text-sm font-semibold text-slate-950 hover:bg-slate-100"
             >
               <Plus className="h-4 w-4" aria-hidden />
               Add “{query.trim()}” as a new category
@@ -124,4 +124,4 @@ const matches = useMemo(() => {
 }
 
 const field =
-  'w-full rounded-xl border border-slate-100 bg-white px-4 py-3.5 text-[15px] text-slate-900 shadow-sm outline-none placeholder:text-slate-400 focus-within:ring-2 focus-within:ring-indigo-500/40'
+  'w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-[15px] text-slate-900 shadow-sm outline-none placeholder:text-slate-400 focus-within:ring-2 focus-within:ring-slate-950/20'

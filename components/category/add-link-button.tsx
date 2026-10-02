@@ -8,7 +8,7 @@ export default function AddLinkButton({ section }: { section: string }) {
       <div className="mx-auto flex max-w-xl justify-end px-4">
         <Link
           href={`/resources/new?section=${encodeURIComponent(section)}`}
-          className="pointer-events-auto flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-700"
+          className="pointer-events-auto flex items-center gap-2 rounded-2xl bg-black px-5 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-black/20 transition hover:scale-[1.02] active:scale-95"
         >
           <Wrench className="h-5 w-5" aria-hidden />
           Add a Tool
